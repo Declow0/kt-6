@@ -1,80 +1,89 @@
 package ru.netology.homework
 
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
+
 fun main() {
+    val now = Instant.now().toEpochMilli()
     try {
-        println(constructText(-1))
+        println(constructText(now, -1))
     } catch (e: RuntimeException) {
         println(e)
     }
 
     println()
 
-    println(constructText(Period.SECOND.seconds))
+    println(constructText(now, Period.SECONDS.chronoUnit.duration.seconds))
 
     println()
 
-    println(constructText(Period.MINUTE.seconds))
-    println(constructText(Period.MINUTE.seconds * 2))
-    println(constructText(Period.MINUTE.seconds * 5))
-    println(constructText(Period.MINUTE.seconds * 11))
-    println(constructText(Period.MINUTE.seconds * 13))
-    println(constructText(Period.MINUTE.seconds * 31))
+    println(constructText(now, Period.MINUTES.chronoUnit.duration.seconds))
+    println(constructText(now, Period.MINUTES.chronoUnit.duration.seconds * 2))
+    println(constructText(now, Period.MINUTES.chronoUnit.duration.seconds * 5))
+    println(constructText(now, Period.MINUTES.chronoUnit.duration.seconds * 11))
+    println(constructText(now, Period.MINUTES.chronoUnit.duration.seconds * 13))
+    println(constructText(now, Period.MINUTES.chronoUnit.duration.seconds * 31))
 
     println()
 
-    println(constructText(Period.HOUR.seconds))
-    println(constructText(Period.HOUR.seconds * 3))
-    println(constructText(Period.HOUR.seconds * 7))
-    println(constructText(Period.HOUR.seconds * 11))
-    println(constructText(Period.HOUR.seconds * 12))
-    println(constructText(Period.HOUR.seconds * 21))
+    println(constructText(now, Period.HOURS.chronoUnit.duration.seconds))
+    println(constructText(now, Period.HOURS.chronoUnit.duration.seconds * 3))
+    println(constructText(now, Period.HOURS.chronoUnit.duration.seconds * 7))
+    println(constructText(now, Period.HOURS.chronoUnit.duration.seconds * 11))
+    println(constructText(now, Period.HOURS.chronoUnit.duration.seconds * 12))
+    println(constructText(now, Period.HOURS.chronoUnit.duration.seconds * 21))
 
     println()
 
-    println(constructText(Period.DAY.seconds))
-    println(constructText(Period.DAY.seconds * 4))
-    println(constructText(Period.DAY.seconds * 6))
+    println(constructText(now, Period.DAYS.chronoUnit.duration.seconds))
+    println(constructText(now, Period.DAYS.chronoUnit.duration.seconds * 4))
+    println(constructText(now, Period.DAYS.chronoUnit.duration.seconds * 6))
 
     println()
 
-    println(constructText(Period.WEEK.seconds))
-    println(constructText(Period.WEEK.seconds * 2))
+    println(constructText(now, Period.WEEKS.chronoUnit.duration.seconds))
+    println(constructText(now, Period.WEEKS.chronoUnit.duration.seconds * 2))
 
     println()
 
-    println(constructText(Period.MONTH.seconds))
-    println(constructText(Period.MONTH.seconds * 2))
-    println(constructText(Period.MONTH.seconds * 8))
-    println(constructText(Period.MONTH.seconds * 11))
+    println(constructText(now, Period.MONTHS.chronoUnit.duration.seconds))
+    println(constructText(now, Period.MONTHS.chronoUnit.duration.seconds * 2))
+    println(constructText(now, Period.MONTHS.chronoUnit.duration.seconds * 8))
+    println(constructText(now, Period.MONTHS.chronoUnit.duration.seconds * 11))
 
     println()
 
-    println(constructText(Period.YEAR.seconds))
-    println(constructText(Period.YEAR.seconds * 3))
-    println(constructText(Period.YEAR.seconds * 9))
-    println(constructText(Period.YEAR.seconds * 11))
-    println(constructText(Period.YEAR.seconds * 14))
-    println(constructText(Period.YEAR.seconds * 21))
-    println(constructText(Period.YEAR.seconds * 101))
-    println(constructText(Period.YEAR.seconds * 111))
+    println(constructText(now, Period.YEARS.chronoUnit.duration.seconds))
+    println(constructText(now, Period.YEARS.chronoUnit.duration.seconds * 3))
+    println(constructText(now, Period.YEARS.chronoUnit.duration.seconds * 9))
+    println(constructText(now, Period.YEARS.chronoUnit.duration.seconds * 11))
+    println(constructText(now, Period.YEARS.chronoUnit.duration.seconds * 14))
+    println(constructText(now, Period.YEARS.chronoUnit.duration.seconds * 21))
+    println(constructText(now, Period.YEARS.chronoUnit.duration.seconds * 101))
+    println(constructText(now, Period.YEARS.chronoUnit.duration.seconds * 111))
 }
 
-fun constructText(seconds: Long): String {
-    if (seconds < 0) throw RuntimeException("Incorrect Input Parameter")
+fun constructText(time: Long, minusSeconds: Long): String {
+    if (minusSeconds < 0) throw RuntimeException("Incorrect Input Parameter")
 
-    val period = calcPeriod(seconds)
-    val value = calcPeriodValue(seconds, period)
-    val form = calcWordForm(value)
+    val timeTo = Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault()).toLocalDateTime()
+    val timeFrom = timeTo.minusSeconds(minusSeconds)
+    println("$timeFrom - $timeTo")
 
-    return if (period == Period.SECOND) {
+    val between = calcBetween(timeFrom, timeTo)
+    val wordForm = calcWordForm(between.second)
+
+    return if (between.first == Period.SECONDS) {
         "менее "
     } else {
-        if (value == 1L) {
+        if (between.second == 1L) {
             ""
         } else {
-            "$value "
+            "${between.second} "
         }
-    } + "${period.wordForm(form)} назад"
+    } + "${between.first.wordForm(wordForm)} назад"
 }
 
 fun calcWordForm(value: Long): WordForm {
@@ -85,66 +94,60 @@ fun calcWordForm(value: Long): WordForm {
     }
 }
 
-fun calcPeriodValue(
-    seconds: Long,
-    period: Period
-): Long {
-    return seconds / period.seconds
+fun calcBetween(
+    from: LocalDateTime,
+    to: LocalDateTime
+): Pair<Period, Long> {
+    Period.values()
+        .sortedArrayDescending()
+        .forEach {
+            val between = it.chronoUnit.between(from, to)
+            if (between > 0)
+                return Pair(it, between)
+        }
+    return Pair(Period.SECONDS, 0L)
 }
 
-fun calcPeriod(seconds: Long): Period {
-    return when {
-        // in works so slow
-        seconds >= Period.YEAR.seconds -> Period.YEAR
-        seconds >= Period.MONTH.seconds -> Period.MONTH
-        seconds >= Period.WEEK.seconds -> Period.WEEK
-        seconds >= Period.DAY.seconds -> Period.DAY
-        seconds >= Period.HOUR.seconds -> Period.HOUR
-        seconds >= Period.MINUTE.seconds -> Period.MINUTE
-        else -> Period.SECOND
-    }
-}
-
-enum class Period(val seconds: Long = 1L) {
-    SECOND {
+enum class Period(val chronoUnit: ChronoUnit) {
+    SECONDS(ChronoUnit.SECONDS) {
         override fun wordForm(wordForm: WordForm) = "минуты"
     },
-    MINUTE(60L) {
+    MINUTES(ChronoUnit.MINUTES) {
         override fun wordForm(wordForm: WordForm) = when (wordForm) {
             WordForm.FIRST -> "минуту"
             WordForm.SECOND -> "минуты"
             WordForm.THIRD -> "минут"
         }
     },
-    HOUR(MINUTE.seconds * 60L) {
+    HOURS(ChronoUnit.HOURS) {
         override fun wordForm(wordForm: WordForm) = when (wordForm) {
             WordForm.FIRST -> "час"
             WordForm.SECOND -> "часа"
             WordForm.THIRD -> "часов"
         }
     },
-    DAY(HOUR.seconds * 24L) {
+    DAYS(ChronoUnit.DAYS) {
         override fun wordForm(wordForm: WordForm) = when (wordForm) {
             WordForm.FIRST -> "день"
             WordForm.SECOND -> "дня"
             WordForm.THIRD -> "дней"
         }
     },
-    WEEK(DAY.seconds * 7L) {
+    WEEKS(ChronoUnit.WEEKS) {
         override fun wordForm(wordForm: WordForm) = when (wordForm) {
             WordForm.FIRST -> "неделю"
             WordForm.SECOND -> "недели"
             WordForm.THIRD -> "недель"
         }
     },
-    MONTH(DAY.seconds * 30L) {
+    MONTHS(ChronoUnit.MONTHS) {
         override fun wordForm(wordForm: WordForm) = when (wordForm) {
             WordForm.FIRST -> "месяц"
             WordForm.SECOND -> "месяца"
             WordForm.THIRD -> "месяцев"
         }
     },
-    YEAR(DAY.seconds * 365L) {
+    YEARS(ChronoUnit.YEARS) {
         override fun wordForm(wordForm: WordForm) = when (wordForm) {
             WordForm.FIRST -> "год"
             WordForm.SECOND -> "года"
